@@ -6,12 +6,17 @@ const form = document.querySelector("#form")
 const inputTransactionName = document.querySelector("#text")
 const inputTransactionAmount = document.querySelector("#amount")
 
-const dummyTransactions = [
-    {id: 1, name: "Auxílio Transporte", amount: 80},
-    {id: 2, name: "Salário Estágio", amount: 1000},
-    {id: 3, name: "Pizza de Calabresa - Pizza Hut", amount: -65},
-    {id: 4, name: "Bolo de Limão", amount: -49.00},
-]
+const localStorageTransactions = JSON.parse(
+    localStorage.getItem('transactions')
+)
+let transactions = localStorage
+    .getItem("transactions") !== null ? localStorage : []
+
+const removeTransaction = id => {
+    transactions = transactions.filter(transaction => transaction.id !== id)
+    updateLocalStorage()
+    init()
+}
 
 const addTransactionIntoDOM = transaction => {
     const operator = transaction.amount < 0 ? '-':'+'
@@ -21,16 +26,16 @@ const addTransactionIntoDOM = transaction => {
 
     li.classList.add(CSSClass)
     li.innerHTML = `        
-        ${transaction.name}<span>${operator}R$ ${amountWithoutOperator}</span><button class="delete-btn">x</button>        
+        ${transaction.name}<span>${operator}R$ ${amountWithoutOperator}</span><button class="delete-btn" onClick="removeTransaction(${transaction.id})">x</button>        
     `
     transactionsUl.prepend(li)
 }
 
 const updateBalanceValues = () => {
-    const transactionsAmounts = dummyTransactions.map(transaction => transaction.amount)
+    const transactionsAmounts = transactions.map(transaction => transaction.amount)
     const total = transactionsAmounts.reduce((accumulator, transaction) => accumulator + transaction, 0).toFixed(2)
     const income = transactionsAmounts.filter(value => value > 0).reduce((accumulator, value) => accumulator+value, 0).toFixed(2)
-    const expense = transactionsAmounts.filter(value => value < 0).reduce((accumulator, value) => accumulator+value)
+    const expense = transactionsAmounts.filter(value => value < 0).reduce((accumulator, value) => accumulator+value, 0).toFixed(2)
     
     balanceDisplay.textContent = `R$ ${total}`
     incomeDisplay.textContent = `R$ ${income}`
@@ -39,11 +44,15 @@ const updateBalanceValues = () => {
 
 const init = () => {
     transactionsUl.innerHTML = ""
-    dummyTransactions.forEach(addTransactionIntoDOM)
+    transactions.forEach(addTransactionIntoDOM)
     updateBalanceValues()
 }
 
 init()
+
+const updateLocalStorage = () => {
+    localStorage.setItem("transactions", JSON.stringify(transactions))
+}
 
 const generateID = () => Math.round(Math.random() * 1000)
 
@@ -59,8 +68,9 @@ form.addEventListener("submit", event => {
     }
 
     const transaction = {id: generateID(), name: transactionName, amount: Number(transactionAmount)}
-    dummyTransactions.push(transaction)
+    transactions.push(transaction)
     init()
+    updateLocalStorage()
 
     inputTransactionName.value = ""
     inputTransactionAmount.value = ""
