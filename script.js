@@ -10,12 +10,43 @@ const localStorageTransactions = JSON.parse(
     localStorage.getItem('transactions')
 )
 let transactions = localStorage
-    .getItem("transactions") !== null ? localStorage : []
+    .getItem("transactions") !== null ? localStorageTransactions : []
 
 const removeTransaction = id => {
     transactions = transactions.filter(transaction => transaction.id !== id)
     updateLocalStorage()
     init()
+}
+
+const addToTransactionsArray = (transactionName, transactionAmount) => {
+    transactions.push({
+        id: generateID(),
+        name: transactionName,
+        amount: Number(transactionAmount)
+    })
+}
+
+const cleanInputs = () => {
+    inputTransactionName.value = ""
+    inputTransactionAmount.value = ""
+}
+
+const handleFormSubmit = event => {
+    event.preventDefault()
+    
+    const transactionName = inputTransactionName.value.trim()
+    const transactionAmount = inputTransactionAmount.value.trim()
+    const isSomeInputEmpty = inputTransactionName.value.trim() === '' || inputTransactionAmount.value.trim() === "";
+    
+    if (isSomeInputEmpty) {
+        alert("Please, complete name or value of transaction")
+        return
+    }
+
+    addToTransactionsArray(transactionName, transactionAmount)
+    init()
+    updateLocalStorage()
+    cleanInputs()
 }
 
 const addTransactionIntoDOM = transaction => {
@@ -31,11 +62,26 @@ const addTransactionIntoDOM = transaction => {
     transactionsUl.prepend(li)
 }
 
+const getExpenses = transactionsAmounts => Math.abs(  
+    transactionsAmounts
+        .filter(value => value < 0)
+        .reduce((accumulator, value) => accumulator + value, 0))
+        .toFixed(2)
+
+const getIncome = transactionsAmounts => transactionsAmounts
+    .filter(value => value > 0)
+    .reduce((accumulator, value) => accumulator + value, 0)
+    .toFixed(2)
+
+const getTotal = transactionsAmounts => transactionsAmounts
+    .reduce((accumulator, transaction) => accumulator + transaction, 0)
+    .toFixed(2)
+
 const updateBalanceValues = () => {
-    const transactionsAmounts = transactions.map(transaction => transaction.amount)
-    const total = transactionsAmounts.reduce((accumulator, transaction) => accumulator + transaction, 0).toFixed(2)
-    const income = transactionsAmounts.filter(value => value > 0).reduce((accumulator, value) => accumulator+value, 0).toFixed(2)
-    const expense = transactionsAmounts.filter(value => value < 0).reduce((accumulator, value) => accumulator+value, 0).toFixed(2)
+    const transactionsAmounts = transactions.map(({amount}) => amount)
+    const total = getTotal(transactionsAmounts)
+    const income = getIncome(transactionsAmounts)
+    const expense = getExpenses(transactionsAmounts)
     
     balanceDisplay.textContent = `R$ ${total}`
     incomeDisplay.textContent = `R$ ${income}`
@@ -44,7 +90,8 @@ const updateBalanceValues = () => {
 
 const init = () => {
     transactionsUl.innerHTML = ""
-    transactions.forEach(addTransactionIntoDOM)
+    console.log(transactions)
+    transactions.forEach(addTransactionIntoDOM) 
     updateBalanceValues()
 }
 
@@ -56,22 +103,4 @@ const updateLocalStorage = () => {
 
 const generateID = () => Math.round(Math.random() * 1000)
 
-form.addEventListener("submit", event => {
-    event.preventDefault()
-    
-    const transactionName = inputTransactionName.value.trim()
-    const transactionAmount = inputTransactionAmount.value.trim()
-
-    if (inputTransactionName.value.trim() === '' || inputTransactionAmount.value.trim() === "") {
-        alert("Please, complete name or value of transaction")
-        return
-    }
-
-    const transaction = {id: generateID(), name: transactionName, amount: Number(transactionAmount)}
-    transactions.push(transaction)
-    init()
-    updateLocalStorage()
-
-    inputTransactionName.value = ""
-    inputTransactionAmount.value = ""
-})
+form.addEventListener("submit", handleFormSubmit)
